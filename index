@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRYPTO FUTURES CASH & CARRY YIELDS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+        
+        body {
+            background-color: #fffff6;
+            color: #000000;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .positive-yield {
+            color: #10b981;
+        }
+        .negative-yield {
+            color: #ef4444;
+        }
+        .loading-spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #000000;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .toggle-container {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        .toggle-checkbox {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 200ms ease-in-out;
+        }
+        .toggle-label:before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 200ms ease-in-out;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #000000;
+        }
+        .toggle-checkbox:checked + .toggle-label:before {
+            transform: translateX(24px);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-black font-mono tracking-tight">CRYPTO FUTURES CASH & CARRY YIELDS</h1>
+                    <p class="text-gray-500 font-mono text-xs md:text-sm tracking-wide mt-2">REAL-TIME YIELD CALCULATIONS FROM DERIBIT EXCHANGE</p>
+                </div>
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-700 font-mono">BTC</span>
+                        <div class="toggle-container">
+                            <input type="checkbox" id="currencyToggle" class="toggle-checkbox" aria-label="TOGGLE BETWEEN BTC AND ETH" />
+                            <label for="currencyToggle" class="toggle-label"></label>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700 font-mono">ETH</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="refreshBtn" class="border border-black hover:bg-gray-100 text-black px-4 py-2 rounded-md flex items-center gap-2 transition-colors font-mono">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>REFRESH</span>
+                        </button>
+                        <div id="lastUpdated" class="text-sm text-gray-500 font-mono" aria-live="polite"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="space-y-8">
+            <!-- Yield Chart -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="font-semibold text-black font-mono">ANNUALIZED YIELD CURVE</h2>
+                    <div id="chartLoading" class="hidden" aria-hidden="true">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div id="chartError" class="hidden text-red-500 text-center font-mono" role="alert">FAILED TO LOAD CHART. PLEASE TRY AGAIN LATER.</div>
+                    <div class="chart-container">
+                        <canvas id="yieldChart" aria-label="ANNUALIZED YIELD CURVE"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <!-- Table Header -->
+                <div class="bg-gray-100 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="font-semibold text-black font-mono" id="tableTitle">BTC FUTURES CONTRACTS</h2>
+                    <div id="loadingIndicator" class="hidden" aria-hidden="true">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200" role="grid" aria-label="FUTURES CONTRACTS DATA">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">INSTRUMENT</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">EXPIRATION</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">DAYS LEFT</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">FUTURES BID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">FUTURES ASK</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">SPOT BID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">SPOT ASK</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">SPOT SIZE (USD)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">FUTURES SIZE (USD)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">PROFIT %</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-mono">ANNUALIZED YIELD</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yieldsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Data will be inserted here by JavaScript -->
+                            <tr id="loadingRow">
+                                <td colspan="11" class="px-6 py-4 text-center text-gray-500 font-mono" role="alert">
+                                    LOADING DATA...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                    <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 font-mono">
+                        <div>DATA UPDATES AUTOMATICALLY EVERY 2 MINUTES</div>
+                        <div>SOURCE: DERIBIT EXCHANGE API</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Info Section -->
+        <section class="mt-8 border border-gray-200 rounded-lg p-6">
+            <h2 class="text-xl font-semibold text-black font-mono mb-4">ABOUT CASH & CARRY STRATEGY</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium text-black font-mono mb-2">WHAT IS CASH & CARRY?</h3>
+                    <p class="text-gray-600">
+                        CASH AND CARRY IS A STRATEGY WHERE AN INVESTOR BUYS THE UNDERLYING ASSET (SPOT CRYPTO) AND SIMULTANEOUSLY SELLS A CORRESPONDING FUTURES CONTRACT. PROFIT COMES FROM THE DIFFERENCE BETWEEN THE FUTURES PRICE AND THE SPOT PRICE WHEN FUTURES TRADE HIGHER THAN SPOT.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-black font-mono mb-2">HOW TO INTERPRET YIELDS</h3>
+                    <p class="text-gray-600">
+                        POSITIVE YIELDS INDICATE THE FUTURES ARE TRADING AT A PREMIUM TO SPOT AND ARE THEREFORE IN CONTANGO. NEGATIVE YIELDS SUGGEST THE MARKET IS IN BACKWARDATION (FUTURES BELOW SPOT). YIELDS ARE CALCULATED BY ASSUMING YOU CROSS THE BID/ASK SPREAD TO OPEN POSITIONS AND INCORPORATE DERIBIT TRADING FEES. ANNUALIZED YIELDS SHOW WHAT THE RETURN WOULD BE IF THE POSITION COULD BE HELD FOR A FULL YEAR.
+                    </p>
+                    <div class="mt-4 p-3 bg-gray-100 rounded-md">
+                        <p class="text-sm text-gray-700 font-mono">
+                            <span class="font-medium">NOTE:</span> THIS CALCULATOR MAY BE GROSSLY INNACURATE AND IS INTENDED FOR ENTERTAINMENT ONLY. SPOT BID/ASK PRICES ARE BASED ON DERIBIT PERPETUAL FUTURES PRICES, WHICH MAY DIFFER FROM TRUE SPOT PRICES. IF THE MARKET IS IN BACKWARDATION NEGATIVE YIELDS DO NOT REPRESENT THE POTENTIAL PROFIT FROM BORROWING SPOT AND BUYING FUTURES.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-500 text-xs font-mono">
+            <p>CRYPTO FUTURES CASH & CARRY YIELDS</p>
+            <p class="italic text-[0.65rem]">ACCURACY NOT GUARANTEED</p>
+            <br>
+            <a href="https://www.linkedin.com/in/riley-skipworth/" target="_blank" rel="noopener noreferrer" class="text-[#0077B5] hover:text-[#0077B5] transition-colors text-sm">
+                <i class="fab fa-linkedin mr-1 text-[#0077B5]"></i> LinkedIn
+            </a>
+        </div>
+
+    <script>
+        // DOM Elements
+        const yieldsTableBody = document.getElementById('yieldsTableBody');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const chartLoading = document.getElementById('chartLoading');
+        const lastUpdated = document.getElementById('lastUpdated');
+        const loadingRow = document.getElementById('loadingRow');
+        const currencyToggle = document.getElementById('currencyToggle');
+        const tableTitle = document.getElementById('tableTitle');
+        const yieldChartCanvas = document.getElementById('yieldChart');
+        const chartError = document.getElementById('chartError');
+        
+        // Chart variables
+        let yieldChart;
+        let currentCurrency = 'BTC';
+
+        // Configuration
+        const config = {
+            refreshInterval: 120000, // 2 minutes (ms)
+            takerFee: 0.0005, // 0.05% taker fee for spot (perpetual futures) - verify with Deribit
+            makerFee: 0.0002, // 0.02% maker fee for futures - verify with Deribit
+            contractSizes: {
+                BTC: 10, // $10 USD per contract - verify with Deribit
+                ETH: 1   // $1 USD per contract - verify with Deribit
+            },
+            maxAnnualizedYield: 1000 // Cap annualized yield at 1000% to avoid extreme values
+        };
+
+        // Cache for API responses
+        const dataCache = new Map();
+        let refreshTimer;
+        let toggleDebounceTimer;
+
+        // Format number with commas and 2 decimal places
+        function formatNumber(num) {
+            if (isNaN(num) || num === null || num === undefined) return '0.00';
+            return parseFloat(num).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Format yield with color coding
+        function formatYield(value) {
+            const num = parseFloat(value);
+            if (isNaN(num)) return '<span class="negative-yield font-medium font-mono">N/A</span>';
+            const className = num >= 0 ? 'positive-yield' : 'negative-yield';
+            return `<span class="${className} font-medium font-mono">${num > 0 ? '+' : ''}${formatNumber(value)}%</span>`;
+        }
+
+        // Initialize the yield chart
+        function initYieldChart() {
+            try {
+                const ctx = yieldChartCanvas.getContext('2d');
+                yieldChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'ANNUALIZED YIELD (%)',
+                            data: [],
+                            borderColor: '#000000',
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#000000',
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: '"IBM Plex Mono", monospace'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
+                                    }
+                                },
+                                bodyFont: {
+                                    family: '"IBM Plex Mono", monospace'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'DAYS TO EXPIRATION',
+                                    font: {
+                                        family: '"IBM Plex Mono", monospace'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        family: '"IBM Plex Mono", monospace'
+                                    }
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'ANNUALIZED YIELD (%)',
+                                    font: {
+                                        family: '"IBM Plex Mono", monospace'
+                                    }
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    },
+                                    font: {
+                                        family: '"IBM Plex Mono", monospace'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('FAILED TO INITIALIZE CHART:', error);
+                chartError.classList.remove('hidden');
+                yieldChartCanvas.classList.add('hidden');
+            }
+        }
+
+        // Update the chart with new data
+        function updateChart(data) {
+            if (!yieldChart) {
+                console.warn('CHART NOT INITIALIZED, SKIPPING UPDATE');
+                return;
+            }
+            
+            const sortedData = [...data].sort((a, b) => a.daysToExpiration - b.daysToExpiration);
+            const labels = sortedData.map(item => item.daysToExpiration);
+            const yields = sortedData.map(item => {
+                const yieldValue = parseFloat(item.annualizedYield);
+                return isNaN(yieldValue) ? 0 : yieldValue;
+            });
+            
+            yieldChart.data.labels = labels;
+            yieldChart.data.datasets[0].data = yields;
+            yieldChart.data.datasets[0].label = `${currentCurrency} ANNUALIZED YIELD (%)`;
+            yieldChart.update();
+        }
+
+        // Update the table with new data
+        function updateTable(data) {
+            if (data.length === 0) {
+                yieldsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="px-6 py-4 text-center text-gray-500 font-mono" role="alert">
+                            NO DATA AVAILABLE. PLEASE TRY AGAIN LATER.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Sort by days to expiration (ascending)
+            data.sort((a, b) => a.daysToExpiration - b.daysToExpiration);
+
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <tr class="fade-in">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-black font-mono">${item.instrument}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">${item.expiration}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">${item.daysToExpiration}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-black font-mono">${formatNumber(item.futuresBid)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-black font-mono">${formatNumber(item.futuresAsk)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-black font-mono">${formatNumber(item.spotBid)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-black font-mono">${formatNumber(item.spotAsk)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-black font-mono">${formatNumber(item.spotAskVolumeUSD)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-black font-mono">${formatNumber(item.futuresBidVolumeUSD)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">${formatYield(item.profitPercentage)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">${formatYield(item.annualizedYield)}</td>
+                    </tr>
+                `;
+            });
+
+            yieldsTableBody.innerHTML = html;
+            
+            // Update last updated time
+            const now = new Date();
+            lastUpdated.textContent = `LAST UPDATED: ${now.toLocaleTimeString()}`;
+            
+            // Update chart with the same data
+            updateChart(data);
+        }
+
+        // Debounce function to limit rapid toggle events
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Fetch data and update table
+        async function fetchDataAndUpdate(currency) {
+            try {
+                loadingIndicator.classList.remove('hidden');
+                chartLoading.classList.remove('hidden');
+                loadingRow.classList.remove('hidden');
+                lastUpdated.textContent = 'UPDATING...';
+
+                // Check cache
+                const cacheKey = `${currency}-${Math.floor(Date.now() / config.refreshInterval)}`;
+                if (dataCache.has(cacheKey)) {
+                    console.log(`USING CACHED DATA FOR ${currency}`);
+                    updateTable(dataCache.get(cacheKey));
+                    return;
+                }
+
+                const data = await getFuturesYields(currency);
+                dataCache.set(cacheKey, data);
+                
+                updateTable(data);
+                
+                // Schedule next refresh
+                clearTimeout(refreshTimer);
+                refreshTimer = setTimeout(() => fetchDataAndUpdate(currency), config.refreshInterval);
+            } catch (error) {
+                console.error('ERROR IN FETCHDATAANDUPDATE:', error);
+                yieldsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="px-6 py-4 text-center text-red-500 font-mono" role="alert">
+                            ERROR FETCHING DATA. PLEASE TRY AGAIN.
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                chartLoading.classList.add('hidden');
+                loadingRow.classList.add('hidden');
+            }
+        }
+
+        // Event Listeners
+        refreshBtn.addEventListener('click', () => {
+            clearTimeout(refreshTimer);
+            fetchDataAndUpdate(currentCurrency);
+        });
+
+        currencyToggle.addEventListener('change', debounce((e) => {
+            currentCurrency = e.target.checked ? 'ETH' : 'BTC';
+            tableTitle.textContent = `${currentCurrency} FUTURES CONTRACTS`;
+            console.log(`TOGGLE SWITCHED TO ${currentCurrency}`);
+            clearTimeout(refreshTimer);
+            fetchDataAndUpdate(currentCurrency);
+        }, 300));
+
+        // Initialize chart and fetch initial data
+        initYieldChart();
+        fetchDataAndUpdate(currentCurrency);
+
+        // API function with trading fees and trade size checks
+        async function getFuturesYields(currency = 'BTC') {
+            const baseUrl = 'https://www.deribit.com/api/v2/public/';
+            try {
+                // Get spot prices and volume (using PERPETUAL as proxy for spot)
+                const spotResponse = await fetch(`${baseUrl}get_order_book?instrument_name=${currency}-PERPETUAL`);
+                const spotData = await spotResponse.json();
+                if (!spotData.result || !Array.isArray(spotData.result.asks) || !Array.isArray(spotData.result.bids) || spotData.result.asks.length === 0 || spotData.result.bids.length === 0) {
+                    throw new Error('INVALID SPOT ORDER BOOK DATA');
+                }
+                const spotAsk = parseFloat(spotData.result.asks[0][0]);
+                const spotBid = parseFloat(spotData.result.bids[0][0]);
+                const spotAskVolume = parseFloat(spotData.result.asks[0][1]);
+                
+                if (isNaN(spotAsk) || isNaN(spotBid) || isNaN(spotAskVolume) || spotAsk <= 0 || spotAskVolume <= 0) {
+                    throw new Error('INVALID SPOT PRICE OR VOLUME');
+                }
+
+                // Get futures instruments
+                const instrumentsResponse = await fetch(`${baseUrl}get_instruments?currency=${currency}&kind=future&expired=false`);
+                const instrumentsData = await instrumentsResponse.json();
+                if (!instrumentsData.result || !Array.isArray(instrumentsData.result)) {
+                    throw new Error('INVALID FUTURES INSTRUMENTS DATA');
+                }
+                const futures = instrumentsData.result.filter(f => f.instrument_name !== `${currency}-PERPETUAL`);
+                
+                // Get order books for all futures
+                const orderBooks = await Promise.all(
+                    futures.map(future =>
+                        fetch(`${baseUrl}get_order_book?instrument_name=${future.instrument_name}`).then(res => res.json())
+                    )
+                );
+                
+                // Contract size for volume conversion
+                const contractSize = config.contractSizes[currency];
+                const spotAskVolumeUSD = spotAskVolume * contractSize;
+                
+                const currentTime = Date.now();
+                const yields = futures.map((future, index) => {
+                    const orderBook = orderBooks[index].result;
+                    if (!orderBook || !Array.isArray(orderBook.bids) || !Array.isArray(orderBook.asks) || orderBook.bids.length === 0 || orderBook.asks.length === 0) {
+                        console.warn(`INVALID ORDER BOOK FOR ${future.instrument_name}`);
+                        return null;
+                    }
+                    const futuresBid = parseFloat(orderBook.bids[0][0]);
+                    const futuresAsk = parseFloat(orderBook.asks[0][0]);
+                    const futuresBidVolume = parseFloat(orderBook.bids[0][1]);
+                    const futuresBidVolumeUSD = futuresBidVolume * contractSize;
+                    const expirationTimestamp = future.expiration_timestamp;
+                    const daysToExpiration = (expirationTimestamp - currentTime) / (24 * 3600 * 1000);
+                    const timeToExpirationYears = daysToExpiration / 365;
+                    
+                    if (isNaN(futuresBid) || isNaN(futuresAsk) || isNaN(futuresBidVolume) || futuresBid <= 0 || futuresBidVolume <= 0 || timeToExpirationYears <= 0) {
+                        console.warn(`SKIPPING ${future.instrument_name} DUE TO INVALID DATA`);
+                        return null;
+                    }
+                    
+                    // Calculate profit and yields with trading fees
+                    const spotCost = spotAsk * (1 + config.takerFee);
+                    const futuresProceeds = futuresBid * (1 - config.makerFee);
+                    const profit = futuresProceeds - spotCost;
+                    const profitPercentage = spotCost > 0 ? (profit / spotCost) * 100 : 0;
+                    let annualizedYield = timeToExpirationYears > 0 ? (profitPercentage / timeToExpirationYears) : 0;
+                    
+                    // Cap annualized yield to prevent extreme values
+                    if (Math.abs(annualizedYield) > config.maxAnnualizedYield) {
+                        annualizedYield = Math.sign(annualizedYield) * config.maxAnnualizedYield;
+                    }
+                    
+                    console.log(`CALCULATED FOR ${future.instrument_name}: PROFIT=${profit.toFixed(2)}, PROFIT%=${profitPercentage.toFixed(2)}, YIELD=${annualizedYield.toFixed(2)}%`);
+                    
+                    return {
+                        instrument: future.instrument_name,
+                        expiration: new Date(expirationTimestamp).toISOString().split('T')[0],
+                        daysToExpiration: Math.ceil(daysToExpiration),
+                        futuresBid,
+                        futuresAsk,
+                        spotBid,
+                        spotAsk,
+                        spotAskVolumeUSD,
+                        futuresBidVolumeUSD,
+                        profitPercentage: profitPercentage.toFixed(2),
+                        annualizedYield: annualizedYield.toFixed(2)
+                    };
+                }).filter(item => item !== null);
+                
+                return yields;
+            } catch (error) {
+                console.error('ERROR FETCHING DATA FROM DERIBIT API:', error);
+                return [];
+            }
+        }
+    </script>
+</body>
+</html>
