@@ -209,7 +209,7 @@
                 <div>
                     <h3 class="font-medium text-black font-mono mb-2">HOW TO INTERPRET YIELDS</h3>
                     <p class="text-gray-600">
-                        POSITIVE YIELDS INDICATE THE FUTURES ARE TRADING AT A PREMIUM TO SPOT AND ARE THEREFORE IN CONTANGO. NEGATIVE YIELDS SUGGEST THE MARKET IS IN BACKWARDATION (FUTURES BELOW SPOT). YIELDS ARE CALCULATED BY ASSUMING YOU CROSS THE BID/ASK SPREAD TO OPEN POSITIONS AND INCORPORATE BINANCE TRADING FEES. ANNUALIZED YIELDS SHOW WHAT THE RETURN WOULD BE IF THE POSITION COULD BE HELD FOR A FULL YEAR.
+                        POSITIVE YIELDS INDICATE THE FUTURES ARE TRADING AT A PREMIUM TO SPOT AND ARE THEREFORE IN CONTANGO. NEGATIVE YIELDS SUGGEST THE MARKET IS IN BACKWARDATION (FUTURES BELOW SPOT). YIELDS ARE CALCULATED BY ASSUMING YOU CROSS THE BID/ASK SPREAD TO OPEN POSITIONS AND INCORPORATE BINANCE TRADING TAKER FEES. ANNUALIZED YIELDS SHOW WHAT THE RETURN WOULD BE IF THE POSITION COULD BE HELD FOR A FULL YEAR.
                     </p>
                     <div class="mt-4 p-3 bg-gray-100 rounded-md">
                         <p class="text-sm text-gray-700 font-mono">
@@ -556,7 +556,7 @@
                     
                     // Calculate profit and yields with trading fees
                     const spotCost = spotAsk * (1 + config.spotTakerFee);
-                    const futuresProceeds = futuresBid * (1 - config.futuresMakerFee);
+                    const futuresProceeds = futuresBid * (1 - config.futuresTakerFee);
                     const profit = futuresProceeds - spotCost;
                     const profitPercentage = spotCost > 0 ? (profit / spotCost) * 100 : 0;
                     let annualizedYield = timeToExpirationYears > 0 ? (profitPercentage / timeToExpirationYears) : 0;
