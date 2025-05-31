@@ -1,2 +1,2 @@
-# deribit-futures-cash-carry
+# binance-futures-cash-carry
 Landing page for cash and carry trade with deribit
