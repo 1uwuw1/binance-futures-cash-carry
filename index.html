@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -108,16 +107,16 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 class="text-2xl md:text-3xl font-bold text-black font-mono tracking-tight">CRYPTO FUTURES CASH & CARRY YIELDS</h1>
-                    <p class="text-gray-500 font-mono text-xs md:text-sm tracking-wide mt-2">REAL-TIME YIELD CALCULATIONS FROM DERIBIT EXCHANGE</p>
+                    <p class="text-gray-500 font-mono text-xs md:text-sm tracking-wide mt-2">REAL-TIME YIELD CALCULATIONS FROM BINANCE EXCHANGE</p>
                 </div>
                 <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-medium text-gray-700 font-mono">BTC</span>
+                        <span class="text-sm font-medium text-gray-700 font-mono">BTCUSDT</span>
                         <div class="toggle-container">
-                            <input type="checkbox" id="currencyToggle" class="toggle-checkbox" aria-label="TOGGLE BETWEEN BTC AND ETH" />
+                            <input type="checkbox" id="currencyToggle" class="toggle-checkbox" aria-label="TOGGLE BETWEEN BTCUSDT AND ETHUSDT" />
                             <label for="currencyToggle" class="toggle-label"></label>
                         </div>
-                        <span class="text-sm font-medium text-gray-700 font-mono">ETH</span>
+                        <span class="text-sm font-medium text-gray-700 font-mono">ETHUSDT</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <button id="refreshBtn" class="border border-black hover:bg-gray-100 text-black px-4 py-2 rounded-md flex items-center gap-2 transition-colors font-mono">
@@ -152,7 +151,7 @@
             <div class="border border-gray-200 rounded-lg overflow-hidden">
                 <!-- Table Header -->
                 <div class="bg-gray-100 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="font-semibold text-black font-mono" id="tableTitle">BTC FUTURES CONTRACTS</h2>
+                    <h2 class="font-semibold text-black font-mono" id="tableTitle">BTCUSDT FUTURES CONTRACTS</h2>
                     <div id="loadingIndicator" class="hidden" aria-hidden="true">
                         <div class="loading-spinner"></div>
                     </div>
@@ -191,7 +190,7 @@
                 <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
                     <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 font-mono">
                         <div>DATA UPDATES AUTOMATICALLY EVERY 2 MINUTES</div>
-                        <div>SOURCE: DERIBIT EXCHANGE API</div>
+                        <div>SOURCE: BINANCE EXCHANGE API</div>
                     </div>
                 </div>
             </div>
@@ -199,22 +198,22 @@
 
         <!-- Info Section -->
         <section class="mt-8 border border-gray-200 rounded-lg p-6">
-            <h2 class="text-xl font-semibold text-black font-mono mb-4">ABOUT CASH & CARRY STRATEGY</h2>
+            <h2 class="text-xl font-semibold text-black font-mono mb-Dow4">ABOUT CASH & CARRY STRATEGY</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <h3 class="font-medium text-black font-mono mb-2">WHAT IS CASH & CARRY?</h3>
                     <p class="text-gray-600">
-                        CASH AND CARRY IS A STRATEGY WHERE AN INVESTOR BUYS THE UNDERLYING ASSET (SPOT CRYPTO) AND SIMULTANEOUSLY SELLS A CORRESPONDING FUTURES CONTRACT. PROFIT COMES FROM THE DIFFERENCE BETWEEN THE FUTURES PRICE AND THE SPOT PRICE WHEN FUTURES TRADE HIGHER THAN SPOT.
+                        CASH AND CARRY IS A STRATEGY WHERE AN INVESTOR BUYS THE UNDERLYING ASSET (SPOT CRYPTO) ON BINANCE'S SPOT MARKET AND SIMULTANEOUSLY SELLS A CORRESPONDING FUTURES CONTRACT ON BINANCE'S USDⓈ-M FUTURES MARKET. PROFIT COMES FROM THE DIFFERENCE BETWEEN THE FUTURES PRICE AND THE SPOT PRICE WHEN FUTURES TRADE HIGHER THAN SPOT.
                     </p>
                 </div>
                 <div>
                     <h3 class="font-medium text-black font-mono mb-2">HOW TO INTERPRET YIELDS</h3>
                     <p class="text-gray-600">
-                        POSITIVE YIELDS INDICATE THE FUTURES ARE TRADING AT A PREMIUM TO SPOT AND ARE THEREFORE IN CONTANGO. NEGATIVE YIELDS SUGGEST THE MARKET IS IN BACKWARDATION (FUTURES BELOW SPOT). YIELDS ARE CALCULATED BY ASSUMING YOU CROSS THE BID/ASK SPREAD TO OPEN POSITIONS AND INCORPORATE DERIBIT TRADING FEES. ANNUALIZED YIELDS SHOW WHAT THE RETURN WOULD BE IF THE POSITION COULD BE HELD FOR A FULL YEAR.
+                        POSITIVE YIELDS INDICATE THE FUTURES ARE TRADING AT A PREMIUM TO SPOT AND ARE THEREFORE IN CONTANGO. NEGATIVE YIELDS SUGGEST THE MARKET IS IN BACKWARDATION (FUTURES BELOW SPOT). YIELDS ARE CALCULATED BY ASSUMING YOU CROSS THE BID/ASK SPREAD TO OPEN POSITIONS AND INCORPORATE BINANCE TRADING FEES. ANNUALIZED YIELDS SHOW WHAT THE RETURN WOULD BE IF THE POSITION COULD BE HELD FOR A FULL YEAR.
                     </p>
                     <div class="mt-4 p-3 bg-gray-100 rounded-md">
                         <p class="text-sm text-gray-700 font-mono">
-                            <span class="font-medium">NOTE:</span> THIS CALCULATOR MAY BE GROSSLY INNACURATE AND IS INTENDED FOR ENTERTAINMENT ONLY. SPOT BID/ASK PRICES ARE BASED ON DERIBIT PERPETUAL FUTURES PRICES, WHICH MAY DIFFER FROM TRUE SPOT PRICES. IF THE MARKET IS IN BACKWARDATION NEGATIVE YIELDS DO NOT REPRESENT THE POTENTIAL PROFIT FROM BORROWING SPOT AND BUYING FUTURES.
+                            <span class="font-medium">NOTE:</span> THIS CALCULATOR MAY BE GROSSLY INACCURATE AND IS INTENDED FOR ENTERTAINMENT ONLY. YIELDS ARE BASED ON BINANCE SPOT AND FUTURES MARKET DATA AND ASSUME STANDARD TRADING FEES, WHICH MAY VARY BASED ON USER TIER OR BNB HOLDINGS. IF THE MARKET IS IN BACKWARDATION, NEGATIVE YIELDS DO NOT REPRESENT THE POTENTIAL PROFIT FROM BORROWING SPOT AND BUYING FUTURES.
                         </p>
                     </div>
                 </div>
@@ -246,17 +245,15 @@
         
         // Chart variables
         let yieldChart;
-        let currentCurrency = 'BTC';
+        let currentCurrency = 'BTCUSDT';
 
         // Configuration
         const config = {
             refreshInterval: 120000, // 2 minutes (ms)
-            takerFee: 0.0005, // 0.05% taker fee for spot (perpetual futures) - verify with Deribit
-            makerFee: 0.0002, // 0.02% maker fee for futures - verify with Deribit
-            contractSizes: {
-                BTC: 10, // $10 USD per contract - verify with Deribit
-                ETH: 1   // $1 USD per contract - verify with Deribit
-            },
+            spotTakerFee: 0.001, // 0.1% taker fee for spot - Binance standard rate
+            spotMakerFee: 0.001, // 0.1% maker fee for spot - Binance standard rate
+            futuresTakerFee: 0.0004, // 0.04% taker fee for USDⓈ-M futures - Binance standard rate
+            futuresMakerFee: 0.0002, // 0.02% maker fee for USDⓈ-M futures - Binance standard rate
             maxAnnualizedYield: 1000 // Cap annualized yield at 1000% to avoid extreme values
         };
 
@@ -489,7 +486,7 @@
         });
 
         currencyToggle.addEventListener('change', debounce((e) => {
-            currentCurrency = e.target.checked ? 'ETH' : 'BTC';
+            currentCurrency = e.target.checked ? 'ETHUSDT' : 'BTCUSDT';
             tableTitle.textContent = `${currentCurrency} FUTURES CONTRACTS`;
             console.log(`TOGGLE SWITCHED TO ${currentCurrency}`);
             clearTimeout(refreshTimer);
@@ -501,65 +498,65 @@
         fetchDataAndUpdate(currentCurrency);
 
         // API function with trading fees and trade size checks
-        async function getFuturesYields(currency = 'BTC') {
-            const baseUrl = 'https://www.deribit.com/api/v2/public/';
+        async function getFuturesYields(currency = 'BTCUSDT') {
+            const spotBaseUrl = 'https://api.binance.com/api/v3/';
+            const futuresBaseUrl = 'https://fapi.binance.com/fapi/v1/';
             try {
-                // Get spot prices and volume (using PERPETUAL as proxy for spot)
-                const spotResponse = await fetch(`${baseUrl}get_order_book?instrument_name=${currency}-PERPETUAL`);
+                // Get spot prices and volume
+                const spotResponse = await fetch(`${spotBaseUrl}depth?symbol=${currency}&limit=5`);
                 const spotData = await spotResponse.json();
-                if (!spotData.result || !Array.isArray(spotData.result.asks) || !Array.isArray(spotData.result.bids) || spotData.result.asks.length === 0 || spotData.result.bids.length === 0) {
+                if (!spotData.bids || !spotData.asks || spotData.bids.length === 0 || spotData.asks.length === 0) {
                     throw new Error('INVALID SPOT ORDER BOOK DATA');
                 }
-                const spotAsk = parseFloat(spotData.result.asks[0][0]);
-                const spotBid = parseFloat(spotData.result.bids[0][0]);
-                const spotAskVolume = parseFloat(spotData.result.asks[0][1]);
+                const spotAsk = parseFloat(spotData.asks[0][0]);
+                const spotBid = parseFloat(spotData.bids[0][0]);
+                const spotAskVolume = parseFloat(spotData.asks[0][1]);
                 
                 if (isNaN(spotAsk) || isNaN(spotBid) || isNaN(spotAskVolume) || spotAsk <= 0 || spotAskVolume <= 0) {
                     throw new Error('INVALID SPOT PRICE OR VOLUME');
                 }
 
                 // Get futures instruments
-                const instrumentsResponse = await fetch(`${baseUrl}get_instruments?currency=${currency}&kind=future&expired=false`);
+                const instrumentsResponse = await fetch(`${futuresBaseUrl}exchangeInfo`);
                 const instrumentsData = await instrumentsResponse.json();
-                if (!instrumentsData.result || !Array.isArray(instrumentsData.result)) {
+                if (!instrumentsData.symbols || !Array.isArray(instrumentsData.symbols)) {
                     throw new Error('INVALID FUTURES INSTRUMENTS DATA');
                 }
-                const futures = instrumentsData.result.filter(f => f.instrument_name !== `${currency}-PERPETUAL`);
+                const futures = instrumentsData.symbols.filter(f => f.symbol.includes(currency) && f.contractType !== 'PERPETUAL' && f.status === 'TRADING');
                 
                 // Get order books for all futures
                 const orderBooks = await Promise.all(
                     futures.map(future =>
-                        fetch(`${baseUrl}get_order_book?instrument_name=${future.instrument_name}`).then(res => res.json())
+                        fetch(`${futuresBaseUrl}depth?symbol=${future.symbol}&limit=5`).then(res => res.json())
                     )
                 );
                 
-                // Contract size for volume conversion
-                const contractSize = config.contractSizes[currency];
-                const spotAskVolumeUSD = spotAskVolume * contractSize;
+                // Calculate USD volumes directly from price and quantity
+                const spotAskVolumeUSD = spotAskVolume * spotAsk;
                 
                 const currentTime = Date.now();
                 const yields = futures.map((future, index) => {
-                    const orderBook = orderBooks[index].result;
+                    const orderBook = orderBooks[index];
                     if (!orderBook || !Array.isArray(orderBook.bids) || !Array.isArray(orderBook.asks) || orderBook.bids.length === 0 || orderBook.asks.length === 0) {
-                        console.warn(`INVALID ORDER BOOK FOR ${future.instrument_name}`);
+                        console.warn(`INVALID ORDER BOOK FOR ${future.symbol}`);
                         return null;
                     }
                     const futuresBid = parseFloat(orderBook.bids[0][0]);
                     const futuresAsk = parseFloat(orderBook.asks[0][0]);
                     const futuresBidVolume = parseFloat(orderBook.bids[0][1]);
-                    const futuresBidVolumeUSD = futuresBidVolume * contractSize;
-                    const expirationTimestamp = future.expiration_timestamp;
+                    const futuresBidVolumeUSD = futuresBidVolume * futuresBid;
+                    const expirationTimestamp = future.deliveryDate;
                     const daysToExpiration = (expirationTimestamp - currentTime) / (24 * 3600 * 1000);
                     const timeToExpirationYears = daysToExpiration / 365;
                     
                     if (isNaN(futuresBid) || isNaN(futuresAsk) || isNaN(futuresBidVolume) || futuresBid <= 0 || futuresBidVolume <= 0 || timeToExpirationYears <= 0) {
-                        console.warn(`SKIPPING ${future.instrument_name} DUE TO INVALID DATA`);
+                        console.warn(`SKIPPING ${future.symbol} DUE TO INVALID DATA`);
                         return null;
                     }
                     
                     // Calculate profit and yields with trading fees
-                    const spotCost = spotAsk * (1 + config.takerFee);
-                    const futuresProceeds = futuresBid * (1 - config.makerFee);
+                    const spotCost = spotAsk * (1 + config.spotTakerFee);
+                    const futuresProceeds = futuresBid * (1 - config.futuresMakerFee);
                     const profit = futuresProceeds - spotCost;
                     const profitPercentage = spotCost > 0 ? (profit / spotCost) * 100 : 0;
                     let annualizedYield = timeToExpirationYears > 0 ? (profitPercentage / timeToExpirationYears) : 0;
@@ -569,10 +566,10 @@
                         annualizedYield = Math.sign(annualizedYield) * config.maxAnnualizedYield;
                     }
                     
-                    console.log(`CALCULATED FOR ${future.instrument_name}: PROFIT=${profit.toFixed(2)}, PROFIT%=${profitPercentage.toFixed(2)}, YIELD=${annualizedYield.toFixed(2)}%`);
+                    console.log(`CALCULATED FOR ${future.symbol}: PROFIT=${profit.toFixed(2)}, PROFIT%=${profitPercentage.toFixed(2)}, YIELD=${annualizedYield.toFixed(2)}%`);
                     
                     return {
-                        instrument: future.instrument_name,
+                        instrument: future.symbol,
                         expiration: new Date(expirationTimestamp).toISOString().split('T')[0],
                         daysToExpiration: Math.ceil(daysToExpiration),
                         futuresBid,
@@ -588,7 +585,7 @@
                 
                 return yields;
             } catch (error) {
-                console.error('ERROR FETCHING DATA FROM DERIBIT API:', error);
+                console.error('ERROR FETCHING DATA FROM BINANCE API:', error);
                 return [];
             }
         }
